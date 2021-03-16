@@ -4,6 +4,8 @@ const Hubs = require('./hubs-model.js');
 const Messages = require('../messages/messages-model.js');
 
 const router = express.Router();
+const mw =require('../middleware/middleware.js')
+
 
 router.get('/', (req, res) => {
   Hubs.find(req.query)
@@ -19,22 +21,9 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/:id', (req, res) => {
-  Hubs.findById(req.params.id)
-    .then(hub => {
-      if (hub) {
-        res.status(200).json(hub);
-      } else {
-        res.status(404).json({ message: 'Hub not found' });
-      }
-    })
-    .catch(error => {
-      // log error to server
-      console.log(error);
-      res.status(500).json({
-        message: 'Error retrieving the hub',
-      });
-    });
+router.get('/:id',mw.checkHubId, (req, res) => {
+ res.status(200).json(req.hub)
+    
 });
 
 router.post('/', (req, res) => {
@@ -51,14 +40,10 @@ router.post('/', (req, res) => {
     });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id',mw.checkHubId, (req, res) => {
   Hubs.remove(req.params.id)
     .then(count => {
-      if (count > 0) {
-        res.status(200).json({ message: 'The hub has been nuked' });
-      } else {
-        res.status(404).json({ message: 'The hub could not be found' });
-      }
+    res.status(200).json({message: "The hub has been terminated"})
     })
     .catch(error => {
       // log error to server
@@ -69,14 +54,10 @@ router.delete('/:id', (req, res) => {
     });
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id',mw.checkHubId, (req, res) => {
   Hubs.update(req.params.id, req.body)
     .then(hub => {
-      if (hub) {
-        res.status(200).json(hub);
-      } else {
-        res.status(404).json({ message: 'The hub could not be found' });
-      }
+      res.status(200).json(hub)
     })
     .catch(error => {
       // log error to server
@@ -87,7 +68,7 @@ router.put('/:id', (req, res) => {
     });
 });
 
-router.get('/:id/messages', (req, res) => {
+router.get('/:id/messages',mw.checkHubId, (req, res) => {
   Hubs.findHubMessages(req.params.id)
     .then(messages => {
       res.status(200).json(messages);
@@ -101,7 +82,7 @@ router.get('/:id/messages', (req, res) => {
     });
 });
 
-router.post('/:id/messages', (req, res) => {
+router.post('/:id/messages', (req, res,next) => {
   const messageInfo = { ...req.body, hub_id: req.params.id };
 
   Messages.add(messageInfo)
@@ -109,12 +90,13 @@ router.post('/:id/messages', (req, res) => {
       res.status(210).json(message);
     })
     .catch(error => {
-      // log error to server
-      console.log(error);
-      res.status(500).json({
-        message: 'Error adding message to the hub',
-      });
+      next(error)
     });
 });
-
+router.use((err,req,res,next) =>{
+  res.status(500).json({
+    message:"something blew up",
+    error:err.message
+  })
+})
 module.exports = router;

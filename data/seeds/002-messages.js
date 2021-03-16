@@ -2,7 +2,7 @@ exports.seed = function(knex, Promise) {
   return knex('messages').insert([
     {
       sender: 'Frodo',
-      text: 'Go back Sam, I am goin gto Mordor alone',
+      text: 'Go back Sam, I am going to Mordor alone',
       hub_id: 1,
     },
     {
